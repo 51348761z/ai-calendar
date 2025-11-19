@@ -10,7 +10,8 @@ interface EventModalProps {
   onDelete?: () => void;
 }
 
-const modalStyles: any = {
+// 弹窗样式定义
+const modalStyles: { [key: string]: React.CSSProperties } = {
   overlay: {
     position: "fixed",
     top: 0,
@@ -50,6 +51,12 @@ const modalStyles: any = {
   },
 };
 
+/**
+ * EventModal 组件
+ *
+ * 用于添加或编辑日程的模态框。
+ * 包含标题、描述输入框，以及 AI 建议功能。
+ */
 export const EventModal: React.FC<EventModalProps> = ({
   visible,
   mode,
@@ -64,9 +71,12 @@ export const EventModal: React.FC<EventModalProps> = ({
 
   useEffect(() => {
     setFormData(initialData);
-    setSuggestion(null); // Reset suggestion when opening a new event
+    setSuggestion(null); // 打开新事件时重置建议
   }, [initialData]);
 
+  /**
+   * 调用 AI 服务获取建议
+   */
   const handleAskAI = async () => {
     if (!formData.title) {
       alert("请先输入日程标题");
