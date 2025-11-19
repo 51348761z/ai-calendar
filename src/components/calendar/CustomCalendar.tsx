@@ -147,6 +147,9 @@ export function CustomCalendar() {
         select={handleDateSelect}
         eventClick={handleEventClick}
         customButtons={myCustomButton}
+        longPressDelay={100} // 缩短长按时间，优化移动端体验
+        eventLongPressDelay={100}
+        selectLongPressDelay={100}
         height="80vh"
       />
 
