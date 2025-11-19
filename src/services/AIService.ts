@@ -1,20 +1,86 @@
-export const getAISuggestion = async (title: string, description: string): Promise<string> => {
-  // 模拟 AI 延迟
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "YOUR_API_KEY_HERE";
 
+export const getAISuggestion = async (
+  title: string,
+  description: string
+): Promise<string> => {
   const lowerTitle = title.toLowerCase();
   const lowerDesc = description.toLowerCase();
   const combined = `${lowerTitle} ${lowerDesc}`;
 
+  let specificPrompt = "";
+
   if (combined.includes("面试") || combined.includes("interview")) {
-    return "AI 建议：\n1. 准备好简历和作品集。\n2. 提前了解公司背景和职位要求。\n3. 准备好自我介绍和常见面试问题的回答。\n4. 穿着得体，保持自信。\n5. 提前规划路线，确保准时到达。";
-  } else if (combined.includes("见面") || combined.includes("meeting") || combined.includes("约会")) {
-    return "AI 建议：\n1. 确认见面时间和地点。\n2. 如果是商务会面，准备好名片和会议议程。\n3. 如果是私人约会，可以准备一个小礼物。\n4. 注意仪表仪容。";
-  } else if (combined.includes("旅行") || combined.includes("trip") || combined.includes("自驾")) {
-    return "AI 建议：\n1. 检查车辆状况（油量、轮胎、刹车等）。\n2. 准备好导航和离线地图。\n3. 带上必要的证件（驾照、身份证）。\n4. 准备急救包、水和零食。\n5. 查看目的地的天气预报。";
-  } else if (combined.includes("会议") || combined.includes("conference")) {
-    return "AI 建议：\n1. 整理会议发言提纲。\n2. 检查演示文稿（PPT）是否无误。\n3. 提前测试会议设备（麦克风、摄像头）。\n4. 准备好记录会议纪要的工具。";
+    specificPrompt =
+      "这是一个面试日程。请给出需要准备哪些材料、复习提纲、面试注意事项、着装建议等方面的建议。";
+  } else if (
+    combined.includes("见面") ||
+    combined.includes("meeting") ||
+    combined.includes("约会")
+  ) {
+    specificPrompt =
+      "这是一个见面日程。请给出需要准备哪些材料、沟通提纲、注意事项等方面的建议。";
+  } else if (
+    combined.includes("旅行") ||
+    combined.includes("trip") ||
+    combined.includes("自驾")
+  ) {
+    specificPrompt =
+      "这是一个旅行或自驾日程。请给出需要准备哪些证件、装备、车辆检查（如果是自驾）、注意事项等方面的建议。";
   } else {
-    return `AI 建议：\n这是一个关于 "${title}" 的日程。\n建议您提前做好规划，预留充足的时间。如果需要特定准备，请根据具体情况列出清单。`;
+    specificPrompt = "请针对这个日程，给出相关的准备建议和注意事项。";
+  }
+
+  const finalPrompt = `
+    日程标题：${title}
+    日程描述：${description}
+    
+    任务：${specificPrompt}
+    
+    要求：
+    1. 回答请控制在 300 字以内。
+    2. 使用中文回答。
+    3. 条理清晰，分点列出。
+    4. 语气友好、专业。
+  `;
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: finalPrompt,
+                },
+              ],
+            },
+          ],
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Gemini API Error:", errorData);
+      throw new Error(
+        `API request failed: ${response.status} ${response.statusText}`
+      );
+    }
+
+    const data = await response.json();
+    const suggestion =
+      data.candidates?.[0]?.content?.parts?.[0]?.text.replace(/\*\*(.*?)\*\*/g,"$1") ||
+      "抱歉，AI 暂时无法生成建议。";
+    return `AI 建议：\n${suggestion}`;
+  } catch (error) {
+    console.error("Error fetching AI suggestion:", error);
+    return "抱歉，获取 AI 建议时出现错误，请检查网络或 API Key 配置。";
   }
 };
