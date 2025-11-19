@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { getAISuggestion } from "../../services/AIService";
 
 interface EventModalProps {
   visible: boolean;
@@ -26,7 +27,9 @@ const modalStyles: any = {
     backgroundColor: "white",
     padding: "20px",
     borderRadius: "8px",
-    width: "300px",
+    width: "400px",
+    maxHeight: "80vh",
+    overflowY: "auto",
     display: "flex",
     flexDirection: "column",
     gap: "10px",
@@ -35,6 +38,15 @@ const modalStyles: any = {
     display: "flex",
     justifyContent: "space-between",
     marginTop: "10px",
+  },
+  suggestionBox: {
+    marginTop: "10px",
+    padding: "10px",
+    backgroundColor: "#f0f8ff",
+    borderRadius: "4px",
+    border: "1px solid #d6e9ff",
+    fontSize: "14px",
+    whiteSpace: "pre-wrap",
   },
 };
 
@@ -47,10 +59,33 @@ export const EventModal: React.FC<EventModalProps> = ({
   onDelete,
 }) => {
   const [formData, setFormData] = useState(initialData);
+  const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setFormData(initialData);
+    setSuggestion(null); // Reset suggestion when opening a new event
   }, [initialData]);
+
+  const handleAskAI = async () => {
+    if (!formData.title) {
+      alert("请先输入日程标题");
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await getAISuggestion(
+        formData.title,
+        formData.description
+      );
+      setSuggestion(result);
+    } catch (error) {
+      console.error("AI request failed", error);
+      setSuggestion("抱歉，AI 暂时无法提供建议。");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!visible) return null;
 
@@ -78,9 +113,35 @@ export const EventModal: React.FC<EventModalProps> = ({
             onChange={(e) =>
               setFormData({ ...formData, description: e.target.value })
             }
-            style={{ width: "100%", marginTop: "5px" }}
+            style={{ width: "100%", marginTop: "5px", minHeight: "80px" }}
           />
         </label>
+
+        <button
+          onClick={handleAskAI}
+          disabled={loading}
+          style={{
+            marginTop: "5px",
+            padding: "8px",
+            backgroundColor: "#1890ff",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: loading ? "not-allowed" : "pointer",
+            opacity: loading ? 0.7 : 1,
+          }}
+        >
+          {loading ? "AI 正在思考..." : "✨ 让 AI 给你的日程提点建议"}
+        </button>
+
+        {suggestion && (
+          <div style={modalStyles.suggestionBox}>
+            <strong>💡 AI 建议：</strong>
+            <div style={{ marginTop: "5px" }}>
+              {suggestion.replace("AI 建议：\n", "")}
+            </div>
+          </div>
+        )}
 
         <div style={modalStyles.buttons}>
           {mode === "edit" && onDelete && (
