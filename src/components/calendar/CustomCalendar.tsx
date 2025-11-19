@@ -1,45 +1,13 @@
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
+import type { DateSelectArg, EventClickArg } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { INITIAL_EVENTS, createEventId } from "../utils/EventUtils";
-
-const headerToolbar = {
-  left: "prev,next today exportButton",
-  center: "title",
-  right: "dayGridMonth,timeGridWeek,timeGridDay",
-};
-
-// 简单的弹窗样式
-const modalStyles: any = {
-  overlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  content: {
-    backgroundColor: "white",
-    padding: "20px",
-    borderRadius: "8px",
-    width: "300px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-  },
-  buttons: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginTop: "10px",
-  },
-};
+import { headerToolbar } from "./CalendarConfig";
+import { exportToICal } from "./CalendarExport";
+import { EventModal } from "./EventModal";
 
 export function CustomCalendar() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -60,57 +28,8 @@ export function CustomCalendar() {
   const handleExport = () => {
     const api = calendarRef.current?.getApi();
     if (!api) return;
-
     const events = api.getEvents();
-    let icsContent =
-      "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//AI Calendar//EN\n";
-
-    events.forEach((event) => {
-      icsContent += "BEGIN:VEVENT\n";
-      icsContent += `UID:${event.id}\n`;
-      icsContent += `DTSTAMP:${
-        new Date().toISOString().replace(/[-:]/g, "").split(".")[0]
-      }Z\n`;
-
-      if (event.allDay) {
-        icsContent += `DTSTART;VALUE=DATE:${event.startStr.replace(
-          /-/g,
-          ""
-        )}\n`;
-        if (event.endStr) {
-          icsContent += `DTEND;VALUE=DATE:${event.endStr.replace(/-/g, "")}\n`;
-        }
-      } else {
-        if (event.start) {
-          icsContent += `DTSTART:${
-            event.start.toISOString().replace(/[-:]/g, "").split(".")[0]
-          }Z\n`;
-        }
-        if (event.end) {
-          icsContent += `DTEND:${
-            event.end.toISOString().replace(/[-:]/g, "").split(".")[0]
-          }Z\n`;
-        }
-      }
-
-      icsContent += `SUMMARY:${event.title}\n`;
-      if (event.extendedProps?.description) {
-        icsContent += `DESCRIPTION:${event.extendedProps.description}\n`;
-      }
-      icsContent += "END:VEVENT\n";
-    });
-
-    icsContent += "END:VCALENDAR";
-
-    const blob = new Blob([icsContent], {
-      type: "text/calendar;charset=utf-8",
-    });
-    const link = document.createElement("a");
-    link.href = window.URL.createObjectURL(blob);
-    link.setAttribute("download", "calendar.ics");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    exportToICal(events);
   };
 
   const myCustomButton = {
@@ -121,7 +40,7 @@ export function CustomCalendar() {
   };
 
   // 处理日期选择（添加新日程）
-  function handleDateSelect(selectInfo) {
+  function handleDateSelect(selectInfo: DateSelectArg) {
     setMode("add");
     setCurrentSelection(selectInfo);
     setFormData({ title: "", description: "" }); // 重置表单
@@ -129,7 +48,7 @@ export function CustomCalendar() {
   }
 
   // 处理事件点击（编辑/删除日程）
-  function handleEventClick(clickInfo) {
+  function handleEventClick(clickInfo: EventClickArg) {
     setMode("edit");
     setCurrentEvent(clickInfo.event);
     setFormData({
@@ -147,8 +66,8 @@ export function CustomCalendar() {
   }
 
   // 保存（添加或更新）
-  function handleSave() {
-    if (!formData.title) {
+  function handleSave(data: { title: string; description: string }) {
+    if (!data.title) {
       alert("请输入标题");
       return;
     }
@@ -159,18 +78,18 @@ export function CustomCalendar() {
 
       calendarApi.addEvent({
         id: createEventId(),
-        title: formData.title,
+        title: data.title,
         start: currentSelection.startStr,
         end: currentSelection.endStr,
         allDay: currentSelection.allDay,
         extendedProps: {
-          description: formData.description,
+          description: data.description,
         },
       });
     } else if (mode === "edit" && currentEvent) {
       // 更新现有事件
-      currentEvent.setProp("title", formData.title);
-      currentEvent.setExtendedProp("description", formData.description);
+      currentEvent.setProp("title", data.title);
+      currentEvent.setExtendedProp("description", data.description);
     }
 
     handleCloseModal();
@@ -201,66 +120,14 @@ export function CustomCalendar() {
         height="80vh"
       />
 
-      {/* 自定义弹窗 (Pop-up) */}
-      {modalVisible && (
-        <div style={modalStyles.overlay}>
-          <div style={modalStyles.content}>
-            <h3>{mode === "add" ? "添加新日程" : "编辑日程"}</h3>
-
-            <label>
-              标题:
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
-                style={{ width: "100%", marginTop: "5px" }}
-              />
-            </label>
-
-            <label>
-              描述:
-              <textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                style={{ width: "100%", marginTop: "5px" }}
-              />
-            </label>
-
-            <div style={modalStyles.buttons}>
-              {mode === "edit" && (
-                <button
-                  onClick={handleDelete}
-                  style={{
-                    backgroundColor: "#ff4d4f",
-                    color: "white",
-                    border: "none",
-                    padding: "5px 10px",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                  }}
-                >
-                  删除
-                </button>
-              )}
-              <div style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
-                <button
-                  onClick={handleCloseModal}
-                  style={{ cursor: "pointer" }}
-                >
-                  取消
-                </button>
-                <button onClick={handleSave} style={{ cursor: "pointer" }}>
-                  保存
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <EventModal
+        visible={modalVisible}
+        mode={mode}
+        initialData={formData}
+        onClose={handleCloseModal}
+        onSave={handleSave}
+        onDelete={mode === "edit" ? handleDelete : undefined}
+      />
     </div>
   );
 }
