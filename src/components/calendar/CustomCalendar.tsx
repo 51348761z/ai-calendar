@@ -12,6 +12,7 @@ import { INITIAL_EVENTS, createEventId } from "../utils/EventUtils";
 import { headerToolbar } from "./CalendarConfig";
 import { exportToICal } from "./CalendarExport";
 import { EventModal } from "./EventModal";
+import "./CalendarStyles.css";
 
 /**
  * CustomCalendar 组件
@@ -136,7 +137,7 @@ export function CustomCalendar() {
   }
 
   return (
-    <div style={{ position: "relative" }}>
+    <div className="calendar-container">
       <FullCalendar
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -150,7 +151,7 @@ export function CustomCalendar() {
         longPressDelay={100} // 缩短长按时间，优化移动端体验
         eventLongPressDelay={100}
         selectLongPressDelay={100}
-        height="80vh"
+        height="auto"
       />
 
       <EventModal

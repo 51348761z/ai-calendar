@@ -10,48 +10,6 @@ interface EventModalProps {
   onDelete?: () => void;
 }
 
-// 弹窗样式定义
-const modalStyles: { [key: string]: React.CSSProperties } = {
-  overlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  content: {
-    backgroundColor: "white",
-    padding: "20px",
-    borderRadius: "8px",
-    width: "90%",
-    maxWidth: "400px",
-    maxHeight: "80vh",
-    overflowY: "auto",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-  },
-  buttons: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginTop: "10px",
-  },
-  suggestionBox: {
-    marginTop: "10px",
-    padding: "10px",
-    backgroundColor: "#f0f8ff",
-    borderRadius: "4px",
-    border: "1px solid #d6e9ff",
-    fontSize: "14px",
-    whiteSpace: "pre-wrap",
-  },
-};
-
 /**
  * EventModal 组件
  *
@@ -101,52 +59,43 @@ export const EventModal: React.FC<EventModalProps> = ({
   if (!visible) return null;
 
   return (
-    <div style={modalStyles.overlay}>
-      <div style={modalStyles.content}>
-        <h3>{mode === "add" ? "添加新日程" : "编辑日程"}</h3>
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <h3 className="modal-header">
+          {mode === "add" ? "添加新日程" : "编辑日程"}
+        </h3>
 
-        <label>
-          标题:
+        <div className="form-group">
+          <label className="form-label">标题</label>
           <input
             type="text"
+            className="form-input"
             value={formData.title}
             onChange={(e) =>
               setFormData({ ...formData, title: e.target.value })
             }
-            style={{ width: "100%", marginTop: "5px" }}
+            placeholder="请输入日程标题"
           />
-        </label>
+        </div>
 
-        <label>
-          描述:
+        <div className="form-group">
+          <label className="form-label">描述</label>
           <textarea
+            className="form-textarea"
             value={formData.description}
             onChange={(e) =>
               setFormData({ ...formData, description: e.target.value })
             }
-            style={{ width: "100%", marginTop: "5px", minHeight: "80px" }}
+            placeholder="添加详细描述..."
           />
-        </label>
+        </div>
 
-        <button
-          onClick={handleAskAI}
-          disabled={loading}
-          style={{
-            marginTop: "5px",
-            padding: "8px",
-            backgroundColor: "#1890ff",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: loading ? "not-allowed" : "pointer",
-            opacity: loading ? 0.7 : 1,
-          }}
-        >
+        <button onClick={handleAskAI} disabled={loading} className="ai-button">
           {loading ? "AI 正在思考..." : "✨ 让 AI 给你的日程提点建议"}
         </button>
 
         {suggestion && (
-          <div style={modalStyles.suggestionBox}>
+          <div className="suggestion-box">
             <strong>💡 AI 建议：</strong>
             <div style={{ marginTop: "5px" }}>
               {suggestion.replace("AI 建议：\n", "")}
@@ -154,33 +103,18 @@ export const EventModal: React.FC<EventModalProps> = ({
           </div>
         )}
 
-        <div style={modalStyles.buttons}>
+        <div className="modal-footer">
           {mode === "edit" && onDelete && (
-            <button
-              onClick={onDelete}
-              style={{
-                backgroundColor: "#ff4d4f",
-                color: "white",
-                border: "none",
-                padding: "5px 10px",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-            >
+            <button onClick={onDelete} className="btn btn-danger">
               删除
             </button>
           )}
-          <div style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
-            <button onClick={onClose} style={{ cursor: "pointer" }}>
-              取消
-            </button>
-            <button
-              onClick={() => onSave(formData)}
-              style={{ cursor: "pointer" }}
-            >
-              保存
-            </button>
-          </div>
+          <button onClick={onClose} className="btn btn-secondary">
+            取消
+          </button>
+          <button onClick={() => onSave(formData)} className="btn btn-primary">
+            保存
+          </button>
         </div>
       </div>
     </div>
