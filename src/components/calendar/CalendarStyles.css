@@ -25,6 +25,8 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box; /* 确保 padding 不会增加总高度 */
+  overflow: hidden; /* 防止容器本身出现滚动条，交给 FullCalendar 处理 */
 }
 
 /* FullCalendar 样式覆盖 */
@@ -43,6 +45,7 @@
   font-size: 1.5rem !important;
   font-weight: 700;
   color: var(--text-primary);
+  margin: 0 2rem !important; /* 增加标题左右间距 */
 }
 
 /* 按钮样式 */
@@ -56,6 +59,11 @@
   transition: all 0.2s ease;
   box-shadow: var(--shadow-sm);
   text-transform: capitalize;
+}
+
+.fc .fc-button:focus {
+  outline: none !important;
+  box-shadow: var(--shadow-sm) !important; /* 保持原有阴影或去除 */
 }
 
 .fc .fc-button:hover {
@@ -143,13 +151,54 @@
   font-weight: 500;
 }
 
-.fc-h-event {
-  background-color: #e0f2fe; /* 浅蓝色事件背景 */
+.fc-h-event,
+.fc-timegrid-event,
+.fc-daygrid-event {
+  background-color: #e0f2fe !important; /* 浅蓝色事件背景 */
   border-left: 3px solid var(--primary-color) !important;
+  border: none !important;
 }
 
-.fc-h-event .fc-event-main {
+.fc-h-event .fc-event-main,
+.fc-timegrid-event .fc-event-main,
+.fc-daygrid-event .fc-event-main {
   color: #0369a1;
+}
+
+/* 隐藏月视图默认圆点 */
+.fc-daygrid-event-dot {
+  display: none;
+}
+
+/* 自定义事件内容样式 */
+.custom-event-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 2px 4px;
+  overflow: hidden;
+}
+
+.event-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-time {
+  font-weight: bold;
+  margin-right: 4px;
+}
+
+.event-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* 弹窗样式 (Modal) */

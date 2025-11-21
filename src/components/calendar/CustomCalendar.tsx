@@ -29,15 +29,16 @@ export function CustomCalendar() {
   const [modalVisible, setModalVisible] = useState(false);
   const [mode, setMode] = useState<"add" | "edit">("add");
 
-  // 用于存储当前选中的日期信息（添加模式）或事件对象（编辑模式）
-  const [currentSelection, setCurrentSelection] =
-    useState<DateSelectArg | null>(null);
+  // 用于存储当前选中的事件对象（编辑模式）
   const [currentEvent, setCurrentEvent] = useState<EventApi | null>(null);
 
   // 表单数据
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    start: "",
+    end: "",
+    allDay: false,
   });
 
   const calendarRef = useRef<FullCalendar>(null);
@@ -65,8 +66,13 @@ export function CustomCalendar() {
    */
   function handleDateSelect(selectInfo: DateSelectArg) {
     setMode("add");
-    setCurrentSelection(selectInfo);
-    setFormData({ title: "", description: "" }); // 重置表单
+    setFormData({
+      title: "",
+      description: "",
+      start: selectInfo.startStr,
+      end: selectInfo.endStr,
+      allDay: selectInfo.allDay,
+    });
     setModalVisible(true);
   }
 
@@ -79,6 +85,9 @@ export function CustomCalendar() {
     setFormData({
       title: clickInfo.event.title,
       description: clickInfo.event.extendedProps?.description || "",
+      start: clickInfo.event.startStr,
+      end: clickInfo.event.endStr || "",
+      allDay: clickInfo.event.allDay,
     });
     setModalVisible(true);
   }
@@ -88,29 +97,34 @@ export function CustomCalendar() {
    */
   function handleCloseModal() {
     setModalVisible(false);
-    setCurrentSelection(null);
     setCurrentEvent(null);
   }
 
   /**
    * 保存日程（添加或更新）
    */
-  function handleSave(data: { title: string; description: string }) {
+  function handleSave(data: {
+    title: string;
+    description: string;
+    start: string;
+    end: string;
+    allDay: boolean;
+  }) {
     if (!data.title) {
       alert("请输入标题");
       return;
     }
 
-    if (mode === "add" && currentSelection) {
-      const calendarApi = currentSelection.view.calendar;
-      calendarApi.unselect(); // 清除选择高亮
+    const calendarApi = calendarRef.current?.getApi();
+    if (!calendarApi) return;
 
+    if (mode === "add") {
       calendarApi.addEvent({
         id: createEventId(),
         title: data.title,
-        start: currentSelection.startStr,
-        end: currentSelection.endStr,
-        allDay: currentSelection.allDay,
+        start: data.start,
+        end: data.end,
+        allDay: data.allDay,
         extendedProps: {
           description: data.description,
         },
@@ -118,11 +132,31 @@ export function CustomCalendar() {
     } else if (mode === "edit" && currentEvent) {
       // 更新现有事件
       currentEvent.setProp("title", data.title);
+      currentEvent.setStart(data.start);
+      currentEvent.setEnd(data.end);
+      currentEvent.setAllDay(data.allDay);
       currentEvent.setExtendedProp("description", data.description);
     }
 
     handleCloseModal();
   }
+
+  /**
+   * 自定义事件渲染内容
+   * 显示标题
+   */
+  const renderEventContent = (eventInfo: any) => {
+    const { event, timeText } = eventInfo;
+
+    return (
+      <div className="custom-event-content">
+        <div className="event-info">
+          {timeText && <span className="event-time">{timeText}</span>}
+          <span className="event-title">{event.title}</span>
+        </div>
+      </div>
+    );
+  };
 
   /**
    * 删除日程
@@ -142,6 +176,7 @@ export function CustomCalendar() {
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView="dayGridMonth"
+        eventContent={renderEventContent}
         headerToolbar={headerToolbar}
         events={INITIAL_EVENTS}
         selectable={true}
@@ -151,7 +186,7 @@ export function CustomCalendar() {
         longPressDelay={100} // 缩短长按时间，优化移动端体验
         eventLongPressDelay={100}
         selectLongPressDelay={100}
-        height="auto"
+        height="100%"
       />
 
       <EventModal

@@ -4,9 +4,21 @@ import { getAISuggestion } from "../../services/AIService";
 interface EventModalProps {
   visible: boolean;
   mode: "add" | "edit";
-  initialData: { title: string; description: string };
+  initialData: {
+    title: string;
+    description: string;
+    start: string;
+    end: string;
+    allDay: boolean;
+  };
   onClose: () => void;
-  onSave: (data: { title: string; description: string }) => void;
+  onSave: (data: {
+    title: string;
+    description: string;
+    start: string;
+    end: string;
+    allDay: boolean;
+  }) => void;
   onDelete?: () => void;
 }
 
@@ -15,6 +27,7 @@ interface EventModalProps {
  *
  * 用于添加或编辑日程的模态框。
  * 包含标题、描述输入框，以及 AI 建议功能。
+ * 支持设置开始和结束时间。
  */
 export const EventModal: React.FC<EventModalProps> = ({
   visible,
@@ -32,6 +45,27 @@ export const EventModal: React.FC<EventModalProps> = ({
     setFormData(initialData);
     setSuggestion(null); // 打开新事件时重置建议
   }, [initialData]);
+
+  /**
+   * 格式化日期用于 input 显示
+   */
+  const formatDateForInput = (dateStr: string, allDay: boolean) => {
+    if (!dateStr) return "";
+    if (allDay) return dateStr.split("T")[0];
+    // 尝试解析日期并转换为本地 datetime-local 格式
+    try {
+      const date = new Date(dateStr);
+      const offset = date.getTimezoneOffset() * 60000;
+      const localDate = new Date(date.getTime() - offset);
+      return localDate.toISOString().slice(0, 16);
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   /**
    * 调用 AI 服务获取建议
@@ -71,10 +105,40 @@ export const EventModal: React.FC<EventModalProps> = ({
             type="text"
             className="form-input"
             value={formData.title}
-            onChange={(e) =>
-              setFormData({ ...formData, title: e.target.value })
-            }
+            onChange={(e) => handleInputChange("title", e.target.value)}
             placeholder="请输入日程标题"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">
+            <input
+              type="checkbox"
+              checked={formData.allDay}
+              onChange={(e) => handleInputChange("allDay", e.target.checked)}
+              style={{ marginRight: "8px" }}
+            />
+            全天事件
+          </label>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">开始时间</label>
+          <input
+            type={formData.allDay ? "date" : "datetime-local"}
+            className="form-input"
+            value={formatDateForInput(formData.start, formData.allDay)}
+            onChange={(e) => handleInputChange("start", e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">结束时间</label>
+          <input
+            type={formData.allDay ? "date" : "datetime-local"}
+            className="form-input"
+            value={formatDateForInput(formData.end, formData.allDay)}
+            onChange={(e) => handleInputChange("end", e.target.value)}
           />
         </div>
 
@@ -83,9 +147,7 @@ export const EventModal: React.FC<EventModalProps> = ({
           <textarea
             className="form-textarea"
             value={formData.description}
-            onChange={(e) =>
-              setFormData({ ...formData, description: e.target.value })
-            }
+            onChange={(e) => handleInputChange("description", e.target.value)}
             placeholder="添加详细描述..."
           />
         </div>
